@@ -6,6 +6,8 @@ import {
   CreateProductData,
   PaymentIntentRequest,
   PaymentIntentResponse,
+  CheckoutSessionRequest,
+  CheckoutSessionResponse,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -82,6 +84,15 @@ class ApiClient {
     data: PaymentIntentRequest
   ): Promise<PaymentIntentResponse> {
     return this.request("/orders/payment-intent", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createCheckoutSession(
+    data: CheckoutSessionRequest
+  ): Promise<CheckoutSessionResponse> {
+    return this.request("/orders/checkout-session", {
       method: "POST",
       body: JSON.stringify(data),
     });

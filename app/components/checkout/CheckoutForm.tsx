@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, SubmitEvent } from "react";
+import { useRouter } from "next/navigation";
 import {
   useStripe,
   useElements,
@@ -15,6 +16,7 @@ export function CheckoutForm() {
   const stripe = useStripe();
   const elements = useElements();
   const { clearCart } = useCart();
+  const router = useRouter();
 
   const [error, setError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,8 +48,8 @@ export function CheckoutForm() {
     });
 
     if (confirmError) {
-      setError(confirmError.message || "Payment failed");
-      setIsProcessing(false);
+      // Redirect to cancel page on payment failure
+      router.push("/checkout/cancel");
     } else {
       // Payment succeeded - clear cart
       clearCart();

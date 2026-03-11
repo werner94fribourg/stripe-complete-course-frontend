@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useRef,
+  useCallback,
   ReactNode,
 } from "react";
 import { Product, CartItem, CartState } from "@/app/lib/types";
@@ -76,7 +77,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     0
   );
 
-  const addItem = (product: Product, quantity = 1) => {
+  const addItem = useCallback((product: Product, quantity = 1) => {
     setItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
@@ -88,15 +89,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, { product, quantity }];
     });
-  };
+  }, []);
 
-  const removeItem = (productId: string) => {
+  const removeItem = useCallback((productId: string) => {
     setItems((prev) => prev.filter((item) => item.product.id !== productId));
-  };
+  }, []);
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = useCallback((productId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(productId);
+      setItems((prev) => prev.filter((item) => item.product.id !== productId));
       return;
     }
     setItems((prev) =>
@@ -104,11 +105,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         item.product.id === productId ? { ...item, quantity } : item
       )
     );
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setItems([]);
-  };
+  }, []);
 
   return (
     <CartContext.Provider

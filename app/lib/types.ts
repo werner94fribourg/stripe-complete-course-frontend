@@ -65,6 +65,19 @@ export interface PaymentIntentResponse {
   clientSecret: string;
 }
 
+export interface CheckoutSessionRequest {
+  orderId: string;
+  userId: string;
+  items: OrderItem[];
+}
+
+export interface CheckoutSessionResponse {
+  url: string;
+  sessionId: string;
+}
+
+export type PaymentMethod = "stripe-elements" | "stripe-checkout";
+
 // API response types
 export interface ApiError {
   message: string;
