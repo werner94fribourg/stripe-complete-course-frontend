@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Product } from "@/app/lib/types";
 import { Card, CardContent, CardFooter } from "@/app/components/ui/Card";
 import { AddToCartButton } from "./AddToCartButton";
+import { RentButton } from "./RentButton";
 
 interface ProductCardProps {
   product: Product;
@@ -32,8 +33,9 @@ export function ProductCard({ product, showDetails = false }: ProductCardProps) 
           ${formattedPrice}
         </p>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex gap-2">
         <AddToCartButton product={product} />
+        <RentButton productId={product.id} />
       </CardFooter>
     </Card>
   );

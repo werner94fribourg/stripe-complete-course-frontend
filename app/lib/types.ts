@@ -144,6 +144,40 @@ export interface Plan {
   updatedAt: string;
 }
 
+// Subscription types
+export interface Subscription {
+  id: string;
+  userId: string;
+  productId: string;
+  planId: string;
+  stripeSubscriptionId: string;
+  startDate: string;
+  endDate: string | null;
+  trialPeriodDays: number | null;
+  trialEndDate: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  paid: boolean;
+  status: string;
+  cancelReason: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSubscriptionData {
+  productId: string;
+  planId: string;
+  startDate: string;
+  endDate?: string;
+  trialPeriodDays?: number;
+}
+
+export interface CreateSubscriptionResponse {
+  subscription: Subscription;
+  clientSecret: string | null;
+}
+
 // API response types
 export interface ApiError {
   message: string;

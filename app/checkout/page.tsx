@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/app/lib/stripe";
 import { api } from "@/app/lib/api";
@@ -16,6 +16,7 @@ export default function CheckoutPage() {
   const [clientSecret, setClientSecret] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const paymentIntentCreated = useRef(false);
 
   const { items, totalItems } = useCart();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -37,6 +38,10 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Prevent duplicate payment intent creation
+    if (paymentIntentCreated.current) return;
+    paymentIntentCreated.current = true;
+
     const createPaymentIntent = async () => {
       try {
         const orderItems = items.map((item) => ({
@@ -51,6 +56,7 @@ export default function CheckoutPage() {
 
         setClientSecret(clientSecret);
       } catch (err) {
+        paymentIntentCreated.current = false;
         setError(
           err instanceof Error ? err.message : "Failed to create payment",
         );

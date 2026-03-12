@@ -12,6 +12,10 @@ import {
   CheckoutSessionResponse,
   Plan,
   CreatePlansData,
+  Order,
+  Subscription,
+  CreateSubscriptionData,
+  CreateSubscriptionResponse,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -155,6 +159,35 @@ class ApiClient {
     return this.request("/plans", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  // Order endpoints (user-specific)
+  async getMyOrders(): Promise<Order[]> {
+    return this.request("/orders/user");
+  }
+
+  // Subscription endpoints
+  async createSubscription(
+    data: CreateSubscriptionData
+  ): Promise<CreateSubscriptionResponse> {
+    return this.request("/subscription", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMySubscriptions(): Promise<Subscription[]> {
+    return this.request("/subscription");
+  }
+
+  async cancelSubscription(
+    id: string,
+    immediately: boolean = false
+  ): Promise<Subscription> {
+    const query = immediately ? "?immediately=true" : "";
+    return this.request(`/subscription/${id}${query}`, {
+      method: "DELETE",
     });
   }
 }
