@@ -63,6 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: payload.sub,
       username: payload.username,
       email: payload.email || "",
+      stripeCustomerId: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     localStorage.setItem("token", access_token);

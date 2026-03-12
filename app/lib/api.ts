@@ -10,6 +10,8 @@ import {
   PaymentIntentResponse,
   CheckoutSessionRequest,
   CheckoutSessionResponse,
+  Plan,
+  CreatePlansData,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -131,6 +133,26 @@ class ApiClient {
     data: CheckoutSessionRequest
   ): Promise<CheckoutSessionResponse> {
     return this.request("/orders/checkout-session", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Plan endpoints
+  async getPlans(): Promise<Plan[]> {
+    return this.request("/plans");
+  }
+
+  async getPlan(id: string): Promise<Plan> {
+    return this.request(`/plans/${id}`);
+  }
+
+  async getPlansByProduct(productId: string): Promise<Plan[]> {
+    return this.request(`/plans/product/${productId}`);
+  }
+
+  async createPlans(data: CreatePlansData): Promise<Plan[]> {
+    return this.request("/plans", {
       method: "POST",
       body: JSON.stringify(data),
     });

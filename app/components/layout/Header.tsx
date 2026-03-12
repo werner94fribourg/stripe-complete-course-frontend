@@ -29,12 +29,20 @@ export function Header() {
               Products
             </Link>
             {isAuthenticated && (
-              <Link
-                href="/products/new"
-                className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                Add Product
-              </Link>
+              <>
+                <Link
+                  href="/products/new"
+                  className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                >
+                  Add Product
+                </Link>
+                <Link
+                  href="/plans/new"
+                  className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                >
+                  Add Plans
+                </Link>
+              </>
             )}
           </nav>
 

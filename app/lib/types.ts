@@ -119,6 +119,31 @@ export interface CheckoutSessionResponse {
 
 export type PaymentMethod = "stripe-elements" | "stripe-checkout";
 
+// Plan types
+export type RecurringInterval = "day" | "week" | "month" | "year";
+
+export interface PlanRange {
+  recurring_interval: RecurringInterval;
+  unit_amount: number;
+  lookup_key: string;
+}
+
+export interface CreatePlansData {
+  productId: string;
+  ranges: PlanRange[];
+}
+
+export interface Plan {
+  id: string;
+  productId: string;
+  recurring_interval: RecurringInterval;
+  unit_amount: number;
+  lookup_key: string;
+  stripePriceId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API response types
 export interface ApiError {
   message: string;
