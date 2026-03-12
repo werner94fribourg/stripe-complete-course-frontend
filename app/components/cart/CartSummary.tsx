@@ -44,7 +44,6 @@ export function CartSummary() {
         }));
 
         const { url } = await api.createCheckoutSession({
-          orderId: `order_${Date.now()}`,
           userId: user.id,
           items: orderItems,
         });

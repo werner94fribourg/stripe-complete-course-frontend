@@ -45,7 +45,6 @@ export default function CheckoutPage() {
         }));
 
         const { clientSecret } = await api.createPaymentIntent({
-          orderId: `order_${Date.now()}`,
           userId: user!.id,
           items: orderItems,
         });

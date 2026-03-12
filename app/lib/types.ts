@@ -3,6 +3,9 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  stripeCustomerId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthState {
@@ -23,18 +26,35 @@ export interface RegisterData {
   password: string;
 }
 
+export interface UpdateUserData {
+  username?: string;
+  email?: string;
+  password?: string;
+}
+
 // Product types
 export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number; // in cents
+  price: number;
+  stripeProductId: string;
+  stripePriceId: string;
+  stripeRecurringPriceId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateProductData {
   name: string;
   description: string;
   price: number;
+}
+
+export interface UpdateProductData {
+  name?: string;
+  description?: string;
+  price?: number;
 }
 
 // Cart types
@@ -50,30 +70,51 @@ export interface CartState {
 }
 
 // Order types
-export interface OrderItem {
+export interface OrderItemInput {
   productId: string;
   quantity: number;
 }
 
-export interface PaymentIntentRequest {
-  orderId: string;
+export interface OrderItem {
+  productId: string;
+  quantity: number;
+  priceAtPurchase: number;
+  stripePriceId: string;
+}
+
+export interface Order {
+  id: string;
   userId: string;
   items: OrderItem[];
+  total: number;
+  pending: boolean;
+  isFailed: boolean;
+  paymentIntentId: string | null;
+  checkoutSessionId: string | null;
+  stripeCustomerId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentIntentRequest {
+  userId: string;
+  items: OrderItemInput[];
 }
 
 export interface PaymentIntentResponse {
   clientSecret: string;
+  order: Order;
 }
 
 export interface CheckoutSessionRequest {
-  orderId: string;
   userId: string;
-  items: OrderItem[];
+  items: OrderItemInput[];
 }
 
 export interface CheckoutSessionResponse {
   url: string;
   sessionId: string;
+  order: Order;
 }
 
 export type PaymentMethod = "stripe-elements" | "stripe-checkout";

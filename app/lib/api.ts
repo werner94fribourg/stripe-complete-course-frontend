@@ -2,8 +2,10 @@ import {
   User,
   LoginCredentials,
   RegisterData,
+  UpdateUserData,
   Product,
   CreateProductData,
+  UpdateProductData,
   PaymentIntentRequest,
   PaymentIntentResponse,
   CheckoutSessionRequest,
@@ -43,6 +45,11 @@ class ApiClient {
       throw new Error(error.message || "An error occurred");
     }
 
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
     return response.json();
   }
 
@@ -63,6 +70,24 @@ class ApiClient {
     });
   }
 
+  // User endpoints
+  async getUser(id: string): Promise<User> {
+    return this.request(`/users/${id}`);
+  }
+
+  async updateUser(id: string, data: UpdateUserData): Promise<User> {
+    return this.request(`/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    return this.request(`/users/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   // Product endpoints
   async getProducts(): Promise<Product[]> {
     return this.request("/products");
@@ -76,6 +101,19 @@ class ApiClient {
     return this.request("/products", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  async updateProduct(id: string, data: UpdateProductData): Promise<Product> {
+    return this.request(`/products/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    return this.request(`/products/${id}`, {
+      method: "DELETE",
     });
   }
 

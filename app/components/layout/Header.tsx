@@ -46,9 +46,12 @@ export function Header() {
               <div className="w-20 h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
             ) : isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600 dark:text-gray-300">
+                <Link
+                  href="/profile"
+                  className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                >
                   {user?.username}
-                </span>
+                </Link>
                 <Button variant="ghost" size="sm" onClick={logout}>
                   Logout
                 </Button>
