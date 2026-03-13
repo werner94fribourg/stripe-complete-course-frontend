@@ -16,6 +16,12 @@ import {
   Subscription,
   CreateSubscriptionData,
   CreateSubscriptionResponse,
+  ConnectAccountStatus,
+  CreateConnectAccountResponse,
+  OnboardingLinkResponse,
+  SellerEarning,
+  EarningsSummary,
+  Payout,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -189,6 +195,49 @@ class ApiClient {
     return this.request(`/subscription/${id}${query}`, {
       method: "DELETE",
     });
+  }
+
+  // Connect endpoints (seller onboarding)
+  async createConnectAccount(email?: string): Promise<CreateConnectAccountResponse> {
+    return this.request("/connect/create-account", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async getConnectOnboardingLink(): Promise<OnboardingLinkResponse> {
+    return this.request("/connect/onboarding-link");
+  }
+
+  async getConnectStatus(): Promise<ConnectAccountStatus> {
+    return this.request("/connect/status");
+  }
+
+  // Seller earnings endpoints
+  async getMyEarnings(): Promise<SellerEarning[]> {
+    return this.request("/seller-earnings");
+  }
+
+  async getEarningsSummary(): Promise<EarningsSummary> {
+    return this.request("/seller-earnings/summary");
+  }
+
+  async getPendingEarnings(): Promise<SellerEarning[]> {
+    return this.request("/seller-earnings/pending");
+  }
+
+  // Payouts endpoints
+  async getMyPayouts(): Promise<Payout[]> {
+    return this.request("/payouts");
+  }
+
+  async getPayoutById(id: string): Promise<Payout> {
+    return this.request(`/payouts/${id}`);
+  }
+
+  // Seller's products
+  async getMyProducts(): Promise<Product[]> {
+    return this.request("/products/my-products");
   }
 }
 

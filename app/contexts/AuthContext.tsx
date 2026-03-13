@@ -3,12 +3,17 @@
 import {
   createContext,
   useContext,
-  useState,
-  useEffect,
+  useCallback,
+  useSyncExternalStore,
   ReactNode,
 } from "react";
 import { api } from "@/app/lib/api";
-import { User, AuthState, LoginCredentials, RegisterData } from "@/app/lib/types";
+import {
+  User,
+  AuthState,
+  LoginCredentials,
+  RegisterData,
+} from "@/app/lib/types";
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -18,43 +23,59 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Always start with loading state to avoid hydration mismatch
-const initialState: AuthState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  isLoading: true,
-};
+// Storage event listeners for cross-tab sync and local updates
+let listeners: Array<() => void> = [];
+
+function subscribe(callback: () => void) {
+  listeners.push(callback);
+
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === "token" || e.key === "user" || e.key === null) {
+      callback();
+    }
+  };
+
+  window.addEventListener("storage", handleStorageChange);
+
+  return () => {
+    listeners = listeners.filter((l) => l !== callback);
+    window.removeEventListener("storage", handleStorageChange);
+  };
+}
+
+function emitChange() {
+  listeners.forEach((listener) => listener());
+}
+
+// Read auth state from localStorage
+function getSnapshot(): AuthState {
+  const token = localStorage.getItem("token");
+  const userStr = localStorage.getItem("user");
+
+  if (token && userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      api.setToken(token);
+      return { user, token, isAuthenticated: true, isLoading: false };
+    } catch {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    }
+  }
+
+  api.setToken(null);
+  return { user: null, token: null, isAuthenticated: false, isLoading: false };
+}
+
+// Server snapshot always returns loading state to avoid hydration mismatch
+function getServerSnapshot(): AuthState {
+  return { user: null, token: null, isAuthenticated: false, isLoading: true };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(initialState);
+  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  // Check localStorage only after mount to avoid hydration mismatch
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userStr = localStorage.getItem("user");
-
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        api.setToken(token);
-        setState({
-          user,
-          token,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-        return;
-      } catch {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    }
-
-    setState((prev) => ({ ...prev, isLoading: false }));
-  }, []);
-
-  const login = async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials) => {
     const { access_token } = await api.login(credentials);
 
     // Decode JWT to get user info
@@ -64,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: payload.username,
       email: payload.email || "",
       stripeCustomerId: null,
+      isSeller: payload.isSeller || false,
+      stripeConnectAccountId: payload.stripeConnectAccountId || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -71,32 +94,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("token", access_token);
     localStorage.setItem("user", JSON.stringify(user));
     api.setToken(access_token);
+    emitChange();
+  }, []);
 
-    setState({
-      user,
-      token: access_token,
-      isAuthenticated: true,
-      isLoading: false,
-    });
-  };
+  const register = useCallback(
+    async (data: RegisterData) => {
+      await api.register(data);
+      // After registration, auto-login
+      await login({ username: data.username, password: data.password });
+    },
+    [login]
+  );
 
-  const register = async (data: RegisterData) => {
-    await api.register(data);
-    // After registration, auto-login
-    await login({ username: data.username, password: data.password });
-  };
-
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     api.setToken(null);
-    setState({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
-  };
+    emitChange();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ ...state, login, register, logout }}>

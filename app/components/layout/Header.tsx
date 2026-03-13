@@ -42,6 +42,21 @@ export function Header() {
                 >
                   Add Plans
                 </Link>
+                {user?.isSeller ? (
+                  <Link
+                    href="/seller/dashboard"
+                    className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
+                    Seller Dashboard
+                  </Link>
+                ) : (
+                  <Link
+                    href="/seller/onboarding"
+                    className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
+                    Become a Seller
+                  </Link>
+                )}
               </>
             )}
           </nav>

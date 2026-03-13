@@ -4,6 +4,8 @@ export interface User {
   username: string;
   email: string;
   stripeCustomerId: string | null;
+  isSeller: boolean;
+  stripeConnectAccountId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +43,7 @@ export interface Product {
   stripeProductId: string;
   stripePriceId: string;
   stripeRecurringPriceId: string | null;
+  ownerId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +52,7 @@ export interface CreateProductData {
   name: string;
   description: string;
   price: number;
+  isOwner?: boolean;
 }
 
 export interface UpdateProductData {
@@ -176,6 +180,59 @@ export interface CreateSubscriptionData {
 export interface CreateSubscriptionResponse {
   subscription: Subscription;
   clientSecret: string | null;
+}
+
+// Seller/Marketplace types
+export interface ConnectAccountStatus {
+  isReady: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+}
+
+export interface CreateConnectAccountResponse {
+  accountId: string;
+  onboardingUrl: string;
+}
+
+export interface OnboardingLinkResponse {
+  url: string;
+}
+
+export interface SellerEarning {
+  id: string;
+  sellerId: string;
+  orderId: string;
+  productId: string;
+  grossAmount: number;
+  platformFee: number;
+  netAmount: number;
+  paymentIntentId: string;
+  stripeTransferId: string | null;
+  status: "pending" | "paid" | "failed";
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EarningsSummary {
+  totalEarnings: number;
+  pendingEarnings: number;
+  paidEarnings: number;
+  earningsCount: number;
+}
+
+export interface Payout {
+  id: string;
+  sellerId: string;
+  totalAmount: number;
+  stripeTransferId: string;
+  status: "pending" | "completed" | "failed";
+  periodStart: string;
+  periodEnd: string;
+  earningsIds: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // API response types
