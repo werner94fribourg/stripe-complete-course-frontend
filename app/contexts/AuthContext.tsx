@@ -44,11 +44,29 @@ function subscribe(callback: () => void) {
 }
 
 function emitChange() {
+  // Invalidate cache when state changes
+  cachedSnapshot = null;
   listeners.forEach((listener) => listener());
 }
 
+// Cached snapshot to avoid infinite loops with useSyncExternalStore
+let cachedSnapshot: AuthState | null = null;
+
+// Unauthenticated state constant
+const UNAUTHENTICATED_STATE: AuthState = {
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  isLoading: false,
+};
+
 // Read auth state from localStorage
 function getSnapshot(): AuthState {
+  // Return cached snapshot if available
+  if (cachedSnapshot !== null) {
+    return cachedSnapshot;
+  }
+
   const token = localStorage.getItem("token");
   const userStr = localStorage.getItem("user");
 
@@ -56,7 +74,8 @@ function getSnapshot(): AuthState {
     try {
       const user = JSON.parse(userStr);
       api.setToken(token);
-      return { user, token, isAuthenticated: true, isLoading: false };
+      cachedSnapshot = { user, token, isAuthenticated: true, isLoading: false };
+      return cachedSnapshot;
     } catch {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
@@ -64,12 +83,21 @@ function getSnapshot(): AuthState {
   }
 
   api.setToken(null);
-  return { user: null, token: null, isAuthenticated: false, isLoading: false };
+  cachedSnapshot = UNAUTHENTICATED_STATE;
+  return cachedSnapshot;
 }
 
 // Server snapshot always returns loading state to avoid hydration mismatch
+// Must be cached to avoid infinite loops with useSyncExternalStore
+const SERVER_SNAPSHOT: AuthState = {
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  isLoading: true,
+};
+
 function getServerSnapshot(): AuthState {
-  return { user: null, token: null, isAuthenticated: false, isLoading: true };
+  return SERVER_SNAPSHOT;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

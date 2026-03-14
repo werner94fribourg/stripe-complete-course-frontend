@@ -103,10 +103,19 @@ export interface Order {
 export interface PaymentIntentRequest {
   userId: string;
   items: OrderItemInput[];
+  paymentMethodId?: string;
 }
 
 export interface PaymentIntentResponse {
   clientSecret: string;
+  order: Order;
+}
+
+export interface PaymentIntentWithMethodResponse {
+  paymentIntentId: string;
+  status: string;
+  requiresAction: boolean;
+  clientSecret: string | null;
   order: Order;
 }
 
@@ -233,6 +242,31 @@ export interface Payout {
   earningsIds: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+// Payment Method types
+export interface PaymentMethodSummary {
+  id: string;
+  type: string;
+  isDefault: boolean;
+  card?: {
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+  };
+  paypal?: {
+    payerEmail: string;
+  };
+  link?: {
+    email: string;
+  };
+  twint?: Record<string, unknown>;
+  createdAt: number;
+}
+
+export interface SetupIntentResponse {
+  clientSecret: string;
 }
 
 // API response types

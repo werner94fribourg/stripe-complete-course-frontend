@@ -8,6 +8,7 @@ import {
   UpdateProductData,
   PaymentIntentRequest,
   PaymentIntentResponse,
+  PaymentIntentWithMethodResponse,
   CheckoutSessionRequest,
   CheckoutSessionResponse,
   Plan,
@@ -22,6 +23,8 @@ import {
   SellerEarning,
   EarningsSummary,
   Payout,
+  PaymentMethodSummary,
+  SetupIntentResponse,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -238,6 +241,39 @@ class ApiClient {
   // Seller's products
   async getMyProducts(): Promise<Product[]> {
     return this.request("/products/my-products");
+  }
+
+  // Payment Methods endpoints
+  async createSetupIntent(): Promise<SetupIntentResponse> {
+    return this.request("/payment-methods/setup-intent", {
+      method: "POST",
+    });
+  }
+
+  async getPaymentMethods(): Promise<PaymentMethodSummary[]> {
+    return this.request("/payment-methods");
+  }
+
+  async deletePaymentMethod(id: string): Promise<void> {
+    return this.request(`/payment-methods/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async setDefaultPaymentMethod(id: string): Promise<void> {
+    return this.request(`/payment-methods/${id}/default`, {
+      method: "POST",
+    });
+  }
+
+  // Payment intent with saved method
+  async createPaymentIntentWithMethod(
+    data: PaymentIntentRequest
+  ): Promise<PaymentIntentWithMethodResponse> {
+    return this.request("/orders/payment-intent", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   }
 }
 

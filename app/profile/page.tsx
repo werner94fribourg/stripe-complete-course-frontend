@@ -2,16 +2,22 @@
 
 import { useState, FormEvent, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Elements } from "@stripe/react-stripe-js";
+import { stripePromise } from "@/app/lib/stripe";
 import { api } from "@/app/lib/api";
 import { useAuth } from "@/app/contexts/AuthContext";
-import { Order, Subscription } from "@/app/lib/types";
+import { Order, Subscription, PaymentMethodSummary } from "@/app/lib/types";
 import { Card } from "@/app/components/ui/Card";
 import { Input } from "@/app/components/ui/Input";
 import { Button } from "@/app/components/ui/Button";
 import { Alert } from "@/app/components/ui/Alert";
 import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
+import {
+  PaymentMethodCard,
+  AddPaymentMethodForm,
+} from "@/app/components/payment-methods";
 
-type Tab = "profile" | "purchases" | "subscriptions";
+type Tab = "profile" | "purchases" | "subscriptions" | "payment-methods";
 
 function ProfileContent() {
   const router = useRouter();
@@ -44,6 +50,19 @@ function ProfileContent() {
   const [subscriptionsError, setSubscriptionsError] = useState("");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
+  // Payment methods state
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodSummary[]>(
+    [],
+  );
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
+  const [paymentMethodsError, setPaymentMethodsError] = useState("");
+  const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
+  const [setupIntentClientSecret, setSetupIntentClientSecret] = useState("");
+  const [deletingPmId, setDeletingPmId] = useState<string | null>(null);
+  const [settingDefaultPmId, setSettingDefaultPmId] = useState<string | null>(
+    null,
+  );
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -72,6 +91,25 @@ function ProfileContent() {
     }
   }, [activeTab, isAuthenticated]);
 
+  // Fetch payment methods when payment-methods tab is active
+  useEffect(() => {
+    if (activeTab === "payment-methods" && isAuthenticated) {
+      fetchPaymentMethods();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  // Check for setup success in URL
+  useEffect(() => {
+    const setup = searchParams.get("setup");
+    if (setup === "success") {
+      setShowAddPaymentMethod(false);
+      setSetupIntentClientSecret("");
+      if (activeTab === "payment-methods") {
+        fetchPaymentMethods();
+      }
+    }
+  }, [searchParams, activeTab]);
+
   const fetchOrders = async () => {
     setOrdersLoading(true);
     setOrdersError("");
@@ -80,7 +118,7 @@ function ProfileContent() {
       setOrders(data);
     } catch (err) {
       setOrdersError(
-        err instanceof Error ? err.message : "Failed to load orders"
+        err instanceof Error ? err.message : "Failed to load orders",
       );
     } finally {
       setOrdersLoading(false);
@@ -95,10 +133,65 @@ function ProfileContent() {
       setSubscriptions(data);
     } catch (err) {
       setSubscriptionsError(
-        err instanceof Error ? err.message : "Failed to load subscriptions"
+        err instanceof Error ? err.message : "Failed to load subscriptions",
       );
     } finally {
       setSubscriptionsLoading(false);
+    }
+  };
+
+  const fetchPaymentMethods = async () => {
+    setPaymentMethodsLoading(true);
+    setPaymentMethodsError("");
+    try {
+      const data = await api.getPaymentMethods();
+      setPaymentMethods(data);
+    } catch (err) {
+      setPaymentMethodsError(
+        err instanceof Error ? err.message : "Failed to load payment methods",
+      );
+    } finally {
+      setPaymentMethodsLoading(false);
+    }
+  };
+
+  const handleAddPaymentMethod = async () => {
+    try {
+      const { clientSecret } = await api.createSetupIntent();
+      setSetupIntentClientSecret(clientSecret);
+      setShowAddPaymentMethod(true);
+    } catch (err) {
+      setPaymentMethodsError(
+        err instanceof Error ? err.message : "Failed to start setup",
+      );
+    }
+  };
+
+  const handleDeletePaymentMethod = async (id: string) => {
+    setDeletingPmId(id);
+    try {
+      await api.deletePaymentMethod(id);
+      await fetchPaymentMethods();
+    } catch (err) {
+      setPaymentMethodsError(
+        err instanceof Error ? err.message : "Failed to delete payment method",
+      );
+    } finally {
+      setDeletingPmId(null);
+    }
+  };
+
+  const handleSetDefaultPaymentMethod = async (id: string) => {
+    setSettingDefaultPmId(id);
+    try {
+      await api.setDefaultPaymentMethod(id);
+      await fetchPaymentMethods();
+    } catch (err) {
+      setPaymentMethodsError(
+        err instanceof Error ? err.message : "Failed to set default",
+      );
+    } finally {
+      setSettingDefaultPmId(null);
     }
   };
 
@@ -136,9 +229,7 @@ function ProfileContent() {
       setPassword("");
       setIsEditing(false);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update profile"
-      );
+      setError(err instanceof Error ? err.message : "Failed to update profile");
     } finally {
       setIsUpdating(false);
     }
@@ -153,16 +244,14 @@ function ProfileContent() {
       logout();
       router.push("/");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete account"
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete account");
       setIsDeleting(false);
     }
   };
 
   const handleCancelSubscription = async (
     subscriptionId: string,
-    immediately: boolean
+    immediately: boolean,
   ) => {
     setCancellingId(subscriptionId);
     try {
@@ -171,7 +260,7 @@ function ProfileContent() {
       await fetchSubscriptions();
     } catch (err) {
       setSubscriptionsError(
-        err instanceof Error ? err.message : "Failed to cancel subscription"
+        err instanceof Error ? err.message : "Failed to cancel subscription",
       );
     } finally {
       setCancellingId(null);
@@ -199,6 +288,8 @@ function ProfileContent() {
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString();
 
+  console.log(paymentMethods);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -207,7 +298,9 @@ function ProfileContent() {
 
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-        {(["profile", "purchases", "subscriptions"] as Tab[]).map((tab) => (
+        {(
+          ["profile", "purchases", "subscriptions", "payment-methods"] as Tab[]
+        ).map((tab) => (
           <button
             key={tab}
             onClick={() => changeTab(tab)}
@@ -217,7 +310,9 @@ function ProfileContent() {
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === "payment-methods"
+              ? "Payment Methods"
+              : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
@@ -283,7 +378,11 @@ function ProfileContent() {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" isLoading={isUpdating} className="flex-1">
+                  <Button
+                    type="submit"
+                    isLoading={isUpdating}
+                    className="flex-1"
+                  >
                     Save Changes
                   </Button>
                 </div>
@@ -294,7 +393,9 @@ function ProfileContent() {
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
                     Username
                   </label>
-                  <p className="text-gray-900 dark:text-white">{user.username}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {user.username}
+                  </p>
                 </div>
 
                 <div>
@@ -394,15 +495,15 @@ function ProfileContent() {
                           order.pending
                             ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                             : order.isFailed
-                            ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                            : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                         }`}
                       >
                         {order.pending
                           ? "Pending"
                           : order.isFailed
-                          ? "Failed"
-                          : "Completed"}
+                            ? "Failed"
+                            : "Completed"}
                       </span>
                     </div>
                   </div>
@@ -455,12 +556,12 @@ function ProfileContent() {
                           subscription.status === "active"
                             ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                             : subscription.status === "trialing"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                            : subscription.status === "canceled"
-                            ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                            : subscription.status === "past_due"
-                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                              : subscription.status === "canceled"
+                                ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                : subscription.status === "past_due"
+                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                         }`}
                       >
                         {subscription.status.charAt(0).toUpperCase() +
@@ -486,6 +587,76 @@ function ProfileContent() {
                 </Card>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Payment Methods Tab */}
+      {activeTab === "payment-methods" && (
+        <div>
+          {paymentMethodsLoading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner size="md" />
+            </div>
+          ) : paymentMethodsError ? (
+            <Alert variant="error">{paymentMethodsError}</Alert>
+          ) : showAddPaymentMethod && setupIntentClientSecret ? (
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Add Payment Method
+              </h2>
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret: setupIntentClientSecret,
+                  appearance: { theme: "stripe" },
+                }}
+              >
+                <AddPaymentMethodForm
+                  onSuccess={() => {
+                    setShowAddPaymentMethod(false);
+                    setSetupIntentClientSecret("");
+                    fetchPaymentMethods();
+                  }}
+                  onCancel={() => {
+                    setShowAddPaymentMethod(false);
+                    setSetupIntentClientSecret("");
+                  }}
+                />
+              </Elements>
+            </Card>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Saved Payment Methods
+                </h2>
+                <Button onClick={handleAddPaymentMethod}>
+                  Add Payment Method
+                </Button>
+              </div>
+
+              {paymentMethods.length === 0 ? (
+                <Card className="p-6">
+                  <p className="text-gray-500 dark:text-gray-400 text-center">
+                    No saved payment methods. Add one to speed up checkout.
+                  </p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {paymentMethods.map((pm) => (
+                    <PaymentMethodCard
+                      key={pm.id}
+                      paymentMethod={pm}
+                      onDelete={handleDeletePaymentMethod}
+                      onSetDefault={handleSetDefaultPaymentMethod}
+                      isDeleting={deletingPmId === pm.id}
+                      isSettingDefault={settingDefaultPmId === pm.id}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
