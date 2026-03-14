@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Elements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/app/lib/stripe";
 import { api } from "@/app/lib/api";
+import { generateIdempotencyKey } from "@/app/lib/idempotency";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { Product, Plan } from "@/app/lib/types";
 import { Card } from "@/app/components/ui/Card";
@@ -87,11 +88,13 @@ export default function RentPage() {
         throw new Error("Please select a plan and start date");
       }
 
+      const idempotencyKey = generateIdempotencyKey("sub");
       const response = await api.createSubscription({
         productId,
         planId: selectedPlanId,
         startDate: new Date(startDate).toISOString(),
         endDate: endDate ? new Date(endDate).toISOString() : undefined,
+        idempotencyKey,
       });
 
       if (response.clientSecret) {

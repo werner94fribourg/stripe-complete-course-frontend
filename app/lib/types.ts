@@ -104,6 +104,7 @@ export interface PaymentIntentRequest {
   userId: string;
   items: OrderItemInput[];
   paymentMethodId?: string;
+  idempotencyKey?: string;
 }
 
 export interface PaymentIntentResponse {
@@ -184,6 +185,7 @@ export interface CreateSubscriptionData {
   startDate: string;
   endDate?: string;
   trialPeriodDays?: number;
+  idempotencyKey?: string;
 }
 
 export interface CreateSubscriptionResponse {

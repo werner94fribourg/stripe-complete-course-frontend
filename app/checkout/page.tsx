@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/app/lib/stripe";
 import { api } from "@/app/lib/api";
+import { generateIdempotencyKey } from "@/app/lib/idempotency";
 import { useCart } from "@/app/contexts/CartContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { PaymentMethodSummary } from "@/app/lib/types";
@@ -96,9 +97,11 @@ export default function CheckoutPage() {
           quantity: item.quantity,
         }));
 
+        const idempotencyKey = generateIdempotencyKey("order");
         const { clientSecret } = await api.createPaymentIntent({
           userId: user!.id,
           items: orderItems,
+          idempotencyKey,
         });
 
         setClientSecret(clientSecret);
@@ -136,10 +139,12 @@ export default function CheckoutPage() {
         quantity: item.quantity,
       }));
 
+      const idempotencyKey = generateIdempotencyKey("order");
       const result = await api.createPaymentIntentWithMethod({
         userId: user.id,
         items: orderItems,
         paymentMethodId: selectedPaymentMethodId,
+        idempotencyKey,
       });
 
       if (result.status === "succeeded") {
@@ -175,9 +180,11 @@ export default function CheckoutPage() {
         quantity: item.quantity,
       }));
 
+      const idempotencyKey = generateIdempotencyKey("order");
       const { clientSecret } = await api.createPaymentIntent({
         userId: user!.id,
         items: orderItems,
+        idempotencyKey,
       });
 
       setClientSecret(clientSecret);
